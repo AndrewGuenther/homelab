@@ -1,0 +1,45 @@
+version: "3"
+
+services:
+  influxdb:
+    image: influxdb:latest
+    container_name: influxdb
+    ports:
+      - 8083:8083
+      - 8086:8086
+      - 8090:8090
+    volumes:
+      - influxdb:/var/lib/influxdb
+
+  telegraf:
+    build:
+      context: .
+      dockerfile: telegraf.dockerfile
+    container_name: telegraf
+    hostname: gomez
+    depends_on:
+      - influxdb
+    environment:
+      HOST_PROC: /rootfs/proc
+      HOST_SYS: /rootfs/sys
+      HOST_ETC: /rootfs/etc
+    volumes:
+      - ./telegraf.conf:/etc/telegraf/telegraf.conf:ro
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+      - /sys:/rootfs/sys:ro
+      - /proc:/rootfs/proc:ro
+      - /etc:/rootfs/etc:ro
+
+  grafana:
+    image: grafana/grafana:latest
+    container_name: grafana
+    depends_on:
+      - influxdb
+    ports:
+      - 3000:3000
+    volumes:
+      - grafana:/var/lib/grafana
+
+volumes:
+  grafana:
+  influxdb:
